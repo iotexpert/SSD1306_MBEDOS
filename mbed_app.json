@@ -1,0 +1,14 @@
+{
+    "config": {
+            "DISPLAY_SDA":   "I2C_SDA",
+            "DISPLAY_SCL":   "I2C_SCL"
+    },
+    "target_overrides": {
+        "*":{
+            "target.components_add": ["EMWIN_OSNTS"],
+            "DISPLAY_SDA":   "P6_1",
+            "DISPLAY_SCL":   "P6_0",
+            "platform.stdio-convert-newlines": true
+        }
+    }
+}
