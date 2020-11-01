@@ -181,13 +181,11 @@ void I2C_WriteDataStream(unsigned char * pData, int numBytes)
     int i;
     int rval;
 
-
     char *data = (char *)malloc(numBytes + 1);
     memcpy(data+1,pData,numBytes);
     data[0] = OLED_CONTROL_BYTE_DATA_STREAM;
     Display_I2C.write(OLED_I2C_ADDRESS,data,numBytes+1,false);
     free(data);
-    
 }
 
 /*******************************************************************************
@@ -206,7 +204,7 @@ void I2C_WriteDataStream(unsigned char * pData, int numBytes)
 *******************************************************************************/
 void I2C_ReadM01(unsigned char * pData, int numBytes) 
 {
-    /* SSD1306 is not readable through i2c. Using cache instead (LCDConf.c, GUIDRV_SPAGE_1C1)*/
+
 }
 
 /*************************** End of file ****************************/

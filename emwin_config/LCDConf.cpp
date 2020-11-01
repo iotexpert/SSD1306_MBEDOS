@@ -107,13 +107,11 @@ Purpose     : Display controller configuration (single layer)
 // 0x81 + 0-0xFF Contrast ... reset = 0x7F
 
 // A4/A5 commands to resume displaying data
-// Resume to RAM content display
+// A4 = Resume to RAM content display
+// A5 = Ignore RAM content (but why?)
 #define OLED_DISPLAYALLONRESUME                       0xA4
+#define OLED_DISPLAYALLONIGNORE                       0xA5
 
-// Entire display ON Output ignores RAM content 
-// I cant think of a reason you would do this
-#define OLED_DISPLAYALLON                             0xA5
- 
 // 0xA6/A7 Normal 1=white 0=black Inverse 0=white  1=black
 #define OLED_DISPLAYNORMAL                            0xA6
 #define OLED_DISPLAYINVERT                            0xA7
@@ -140,20 +138,28 @@ Purpose     : Display controller configuration (single layer)
 // Address Setting Command Table
 ////////////////////////////////////////////////////////////////////////
 
-
 // 00-0F - set lower nibble of page address
 // 10-1F - set upper niddle of page address
 
 #define OLED_SETMEMORYMODE                            0x20
-// 00 = horizontal, 01 = vertical 2= page >=3=illegal
+#define OLED_SETMEMORYMODE_HORIZONTAL                 0x00
+#define OLED_SETMEMORYMODE_VERTICAL                   0x01
+#define OLED_SETMEMORYMODE_PAGE                       0x02
+
+// 0x20 + 00 = horizontal, 01 = vertical 2= page >=3=illegal
 
 // Only used for horizonal and vertical address modes
 #define OLED_SETCOLUMNADDR                            0x21
-#define OLED_SETPAGEADDR                              0x22
+// 2 byte Parameter
+// 0-127 column start address 
+// 0-127 column end address
 
-// Only used for page address modes
-#define OLED_SETLOWCOLUMN                             0x00
-#define OLED_SETHIGHCOLUMN                            0x10
+#define OLED_SETPAGEADDR                              0x22
+// 2 byte parameter
+// 0-7 page start address
+// 0-7 page end Address
+
+// 0xB0 -0xB7 ..... Pick page 0-7
 
 ////////////////////////////////////////////////////////////////////////
 // Hardware Configuration
@@ -167,6 +173,7 @@ Purpose     : Display controller configuration (single layer)
 #define OLED_SEGREMAPINV                              0xA1
 
 #define OLED_SETMULTIPLEX                             0xA8
+// 0xA8, number of rows -1 ... e.g. 0xA8, 63
 
 // X Direction
 #define OLED_COMSCANINC                               0xC0
@@ -179,16 +186,23 @@ Purpose     : Display controller configuration (single layer)
 #define OLED_SETCOMPINS                               0xDA
 // legal values 0x02, 0x12, 0x022, 0x032
 
+////////////////////////////////////////////////////////////////////////
+// Timing and Driving Scheme Settings
+////////////////////////////////////////////////////////////////////////
+
 #define OLED_SETDISPLAYCLOCKDIV                       0xD5
 #define OLED_SETPRECHARGE                             0xD9
 
-#define OLED_SETVCOMDETECT                            0xDB
+#define OLED_SETVCOMDESELECT                          0xDB
 #define OLED_NOP                                      0xE3
 
+////////////////////////////////////////////////////////////////////////
+// Charge Pump Regulator
+////////////////////////////////////////////////////////////////////////
 
 #define OLED_CHARGEPUMP                               0x8D
 #define OLED_CHARGEPUMP_ON                            0x14
-#define OLED_CHARGEPUMP_OFF                           0x00
+#define OLED_CHARGEPUMP_OFF                           0x10
 
 
 /*********************************************************************
@@ -205,7 +219,7 @@ static void _InitController(void)
         //////// Fundamental Commands
         OLED_DISPLAYOFF,          // 0xAE Screen Off
         OLED_SETCONTRAST,         // 0x81 Set contrast control
-        0x7F,                     // 0-FF ... so half way
+        0x7F,                     // 0-FF ... default half way
 
         OLED_DISPLAYNORMAL,       // 0xA6, //Set normal display 
 
@@ -214,7 +228,7 @@ static void _InitController(void)
 
         //////// Addressing Commands
         OLED_SETMEMORYMODE,       // 0x20, //Set memory address mode
-        0x02,                     // Page
+        OLED_SETMEMORYMODE_HORIZONTAL,  // Page
 
         //////// Hardware Configuration Commands
         OLED_SEGREMAPINV,         // 0xA1, //Set segment re-map 
@@ -224,19 +238,19 @@ static void _InitController(void)
         OLED_SETDISPLAYOFFSET,    // 0xD3 Set Display Offset
         0x00,                     //
         OLED_SETCOMPINS,          // 0xDA Set COM pins hardware configuration
-        0x12,                     //
+        0x12,                     // Alternate com config & disable com left/right
    
         //////// Timing and Driving Settings
         OLED_SETDISPLAYCLOCKDIV,  // 0xD5 Set display oscillator frequency 0-0xF /clock divide ratio 0-0xF
         0x80,                     // Default value
         OLED_SETPRECHARGE,        // 0xD9 Set pre-changed period
-        0xF1,                     //
-        OLED_SETVCOMDETECT,       // 0xDB, //Set VCOMH Deselected level
+        0x22,                     // Default 0x22
+        OLED_SETVCOMDESELECT,     // 0xDB, //Set VCOMH Deselected level
         0x20,                     // Default 
 
         //////// Charge pump regulator
         OLED_CHARGEPUMP,          // 0x8D Set charge pump
-        0x14,                     // VCC generated by internal DC/DC circuit
+        OLED_CHARGEPUMP_ON,       // 0x14 VCC generated by internal DC/DC circuit
 
         // Turn the screen back on...       
         OLED_DISPLAYALLONRESUME,  // 0xA4, //Set entire display on/off
@@ -245,6 +259,7 @@ static void _InitController(void)
 
     I2C_Init();
     I2C_WriteCmdStream(initializeCmds, sizeof(initializeCmds));
+
 }
 
 
